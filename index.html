@@ -185,13 +185,13 @@ function render() {
 }
 
 function addOshi() {
-  const name = nameInput.value;
-  const folder = folderInput.value;
-  const month = birthMonth.value;
-  const day = birthDay.value;
+  const name = document.getElementById("name").value;
+  const folder = document.getElementById("folder").value;
+  const month = document.getElementById("birthMonth").value;
+  const day = document.getElementById("birthDay").value;
   const birthday = (month && day) ? `${month}/${day}` : "";
-  const start = startDate.value;
-  const file = image.files[0];
+  const start = document.getElementById("startDate").value;
+  const file = document.getElementById("image").files[0];
 
   if (file) {
     const reader = new FileReader();
