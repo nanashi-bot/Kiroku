@@ -70,10 +70,34 @@ img {
   <input id="name" placeholder="推しの名前">
 
   <!-- 月日だけ -->
-  <input id="birthday" type="month">
+  <select id="birthMonth">
+  <option value="">月</option>
+</select>
+
+<select id="birthDay">
+  <option value="">日</option>
+</select>
 
   <input id="startDate" type="date">
 
+  // 月と日を作る
+const monthSelect = document.getElementById("birthMonth");
+const daySelect = document.getElementById("birthDay");
+
+for (let i = 1; i <= 12; i++) {
+  const option = document.createElement("option");
+  option.value = i;
+  option.textContent = i + "月";
+  monthSelect.appendChild(option);
+}
+
+for (let i = 1; i <= 31; i++) {
+  const option = document.createElement("option");
+  option.value = i;
+  option.textContent = i + "日";
+  daySelect.appendChild(option);
+}
+  
   <!-- 画像 -->
   <input id="image" type="file" accept="image/*">
 
@@ -120,7 +144,9 @@ function render() {
 
 function addOshi() {
   const name = document.getElementById("name").value;
-  const birthday = document.getElementById("birthday").value;
+  const month = document.getElementById("birthMonth").value;
+const day = document.getElementById("birthDay").value;
+const birthday = (month && day) ? `${month}/${day}` : "";
   const start = document.getElementById("startDate").value;
   const file = document.getElementById("image").files[0];
 
