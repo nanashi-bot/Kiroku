@@ -36,29 +36,45 @@ button {
   color: white;
 }
 
+/* フォルダ */
+.folder {
+  margin-top: 20px;
+}
+
+.folder-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+/* 2列表示 */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .card {
   background: #222;
-  padding: 12px;
-  margin-top: 12px;
+  padding: 10px;
   border-radius: 12px;
   position: relative;
 }
 
 .delete {
   position: absolute;
-  right: 10px;
-  top: 10px;
-  width: auto;
-  padding: 5px 8px;
+  right: 5px;
+  top: 5px;
+  padding: 3px 6px;
   background: #555;
   border-radius: 6px;
-  color: white;
+  font-size: 12px;
 }
 
 img {
   width: 100%;
   border-radius: 10px;
-  margin-top: 8px;
+  margin-top: 5px;
 }
 </style>
 </head>
@@ -69,18 +85,12 @@ img {
 
 <div class="container">
   <input id="name" placeholder="推しの名前">
+  <input id="folder" placeholder="フォルダ名">
 
-  <!-- 月日 -->
-  <select id="birthMonth">
-    <option value="">月</option>
-  </select>
-
-  <select id="birthDay">
-    <option value="">日</option>
-  </select>
+  <select id="birthMonth"><option value="">月</option></select>
+  <select id="birthDay"><option value="">日</option></select>
 
   <input id="startDate" type="date">
-
   <input id="image" type="file" accept="image/*">
 
   <button onclick="addOshi()">追加</button>
@@ -90,25 +100,10 @@ img {
 
 <script>
 
-// 月と日を生成
-const monthSelect = document.getElementById("birthMonth");
-const daySelect = document.getElementById("birthDay");
+// 月日生成
+for (let i = 1; i <= 12; i++) birthMonth.innerHTML += `<option>${i}</option>`;
+for (let i = 1; i <= 31; i++) birthDay.innerHTML += `<option>${i}</option>`;
 
-for (let i = 1; i <= 12; i++) {
-  const option = document.createElement("option");
-  option.value = i;
-  option.textContent = i + "月";
-  monthSelect.appendChild(option);
-}
-
-for (let i = 1; i <= 31; i++) {
-  const option = document.createElement("option");
-  option.value = i;
-  option.textContent = i + "日";
-  daySelect.appendChild(option);
-}
-
-// データ
 let data = JSON.parse(localStorage.getItem("oshiData")) || [];
 
 function save() {
@@ -117,57 +112,97 @@ function save() {
 
 function calcDays(start) {
   if (!start) return "未設定";
-  const startDate = new Date(start);
-  const today = new Date();
-  return Math.floor((today - startDate) / (1000*60*60*24));
+  return Math.floor((new Date() - new Date(start)) / 86400000);
 }
 
 function render() {
   const list = document.getElementById("list");
   list.innerHTML = "";
 
+  const groups = {};
+
   data.forEach((item, index) => {
-    const days = calcDays(item.start);
-
-    const card = document.createElement("div");
-    card.className = "card";
-
-    card.innerHTML = `
-      <button class="delete" onclick="removeOshi(${index})">×</button>
-      <strong>${item.name || "名前なし"}</strong><br>
-      誕生日: ${item.birthday || "未設定"}<br>
-      好きになって: ${days}日
-      ${item.image ? `<img src="${item.image}">` : ""}
-    `;
-
-    list.appendChild(card);
+    const folder = item.folder || "未分類";
+    if (!groups[folder]) groups[folder] = [];
+    groups[folder].push({ ...item, index });
   });
+
+  for (let folder in groups) {
+    const section = document.createElement("div");
+    section.className = "folder";
+
+    const title = document.createElement("div");
+    title.className = "folder-title";
+    title.textContent = "▼ " + folder;
+
+    const cards = document.createElement("div");
+    cards.className = "cards";
+
+    // 折りたたみ
+    title.onclick = () => {
+      cards.style.display = cards.style.display === "none" ? "grid" : "none";
+    };
+
+    groups[folder].forEach(item => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.draggable = true;
+
+      // ドラッグ
+      card.ondragstart = (e) => {
+        e.dataTransfer.setData("index", item.index);
+      };
+
+      card.ondragover = (e) => e.preventDefault();
+
+      card.ondrop = (e) => {
+        const from = e.dataTransfer.getData("index");
+        const to = item.index;
+
+        const temp = data[from];
+        data.splice(from, 1);
+        data.splice(to, 0, temp);
+
+        save();
+        render();
+      };
+
+      card.innerHTML = `
+        <button class="delete" onclick="removeOshi(${item.index})">×</button>
+        <strong>${item.name || "名前なし"}</strong><br>
+        ${item.birthday || "誕生日未設定"}<br>
+        ${calcDays(item.start)}日
+        ${item.image ? `<img src="${item.image}">` : ""}
+      `;
+
+      cards.appendChild(card);
+    });
+
+    section.appendChild(title);
+    section.appendChild(cards);
+    list.appendChild(section);
+  }
 }
 
 function addOshi() {
-  const name = document.getElementById("name").value;
-  const month = document.getElementById("birthMonth").value;
-  const day = document.getElementById("birthDay").value;
+  const name = nameInput.value;
+  const folder = folderInput.value;
+  const month = birthMonth.value;
+  const day = birthDay.value;
   const birthday = (month && day) ? `${month}/${day}` : "";
-
-  const start = document.getElementById("startDate").value;
-  const file = document.getElementById("image").files[0];
+  const start = startDate.value;
+  const file = image.files[0];
 
   if (file) {
     const reader = new FileReader();
-    reader.onload = function(e) {
-      data.push({
-        name,
-        birthday,
-        start,
-        image: e.target.result
-      });
+    reader.onload = e => {
+      data.push({ name, folder, birthday, start, image: e.target.result });
       save();
       render();
     };
     reader.readAsDataURL(file);
   } else {
-    data.push({ name, birthday, start });
+    data.push({ name, folder, birthday, start });
     save();
     render();
   }
@@ -179,7 +214,6 @@ function removeOshi(index) {
   render();
 }
 
-// 初回表示
 render();
 
 </script>
