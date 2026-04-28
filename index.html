@@ -23,7 +23,7 @@ body {
   padding: 15px;
 }
 
-input, button {
+input, select, button {
   width: 100%;
   padding: 12px;
   margin-top: 10px;
@@ -52,6 +52,7 @@ button {
   padding: 5px 8px;
   background: #555;
   border-radius: 6px;
+  color: white;
 }
 
 img {
@@ -69,18 +70,27 @@ img {
 <div class="container">
   <input id="name" placeholder="推しの名前">
 
-  <!-- 月日だけ -->
+  <!-- 月日 -->
   <select id="birthMonth">
-  <option value="">月</option>
-</select>
+    <option value="">月</option>
+  </select>
 
-<select id="birthDay">
-  <option value="">日</option>
-</select>
+  <select id="birthDay">
+    <option value="">日</option>
+  </select>
 
   <input id="startDate" type="date">
 
-  // 月と日を作る
+  <input id="image" type="file" accept="image/*">
+
+  <button onclick="addOshi()">追加</button>
+
+  <div id="list"></div>
+</div>
+
+<script>
+
+// 月と日を生成
 const monthSelect = document.getElementById("birthMonth");
 const daySelect = document.getElementById("birthDay");
 
@@ -97,16 +107,8 @@ for (let i = 1; i <= 31; i++) {
   option.textContent = i + "日";
   daySelect.appendChild(option);
 }
-  
-  <!-- 画像 -->
-  <input id="image" type="file" accept="image/*">
 
-  <button onclick="addOshi()">追加</button>
-
-  <div id="list"></div>
-</div>
-
-<script>
+// データ
 let data = JSON.parse(localStorage.getItem("oshiData")) || [];
 
 function save() {
@@ -145,8 +147,9 @@ function render() {
 function addOshi() {
   const name = document.getElementById("name").value;
   const month = document.getElementById("birthMonth").value;
-const day = document.getElementById("birthDay").value;
-const birthday = (month && day) ? `${month}/${day}` : "";
+  const day = document.getElementById("birthDay").value;
+  const birthday = (month && day) ? `${month}/${day}` : "";
+
   const start = document.getElementById("startDate").value;
   const file = document.getElementById("image").files[0];
 
@@ -176,7 +179,9 @@ function removeOshi(index) {
   render();
 }
 
+// 初回表示
 render();
+
 </script>
 
 </body>
