@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推し記録</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #111;
+  color: #fff;
+}
+
+/* 上のバー（アプリ感） */
+.header {
+  padding: 15px;
+  text-align: center;
+  background: #000;
+  font-size: 18px;
+}
+
+/* 入力エリア */
+.container {
+  padding: 15px;
+}
+
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+}
+
+button {
+  background: #333;
+  color: white;
+}
+
+/* カード */
+.card {
+  background: #222;
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 12px;
+  position: relative;
+}
+
+/* 削除ボタン */
+.delete {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: #555;
+  border: none;
+  border-radius: 6px;
+  padding: 5px;
+  color: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">推し記録</div>
+
+<div class="container">
+  <input id="name" placeholder="推しの名前">
+  <input id="birthday" type="date">
+  <input id="startDate" type="date">
+  <button onclick="addOshi()">追加</button>
+
+  <div id="list"></div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("oshiData")) || [];
+
+function save() {
+  localStorage.setItem("oshiData", JSON.stringify(data));
+}
+
+function calcDays(start) {
+  const startDate = new Date(start);
+  const today = new Date();
+  return Math.floor((today - startDate) / (1000*60*60*24));
+}
+
+function render() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.forEach((item, index) => {
+    const days = calcDays(item.start);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <button class="delete" onclick="removeOshi(${index})">×</button>
+      <strong>${item.name}</strong><br>
+      誕生日: ${item.birthday || "未設定"}<br>
+      好きになって: ${days}日
+    `;
+
+    list.appendChild(card);
+  });
+}
+
+function addOshi() {
+  const name = document.getElementById("name").value;
+  const birthday = document.getElementById("birthday").value;
+  const start = document.getElementById("startDate").value;
+
+  if (!name || !start) {
+    alert("名前と好きになった日は必須！");
+    return;
+  }
+
+  data.push({ name, birthday, start });
+  save();
+  render();
+}
+
+function removeOshi(index) {
+  data.splice(index, 1);
+  save();
+  render();
+}
+
+// 初回表示
+render();
+</script>
+
+</body>
+</html>
