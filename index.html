@@ -1,1 +1,225 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推しアプリ</title>
+<link rel="manifest" href="manifest.json">
+
+<style>
+body {
+  margin:0;
+  background:#111;
+  color:white;
+  font-family:sans-serif;
+}
+
+.header {
+  padding:10px;
+  text-align:center;
+  background:black;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:10px;
+}
+
+.card {
+  background:#222;
+  border-radius:12px;
+  padding:5px;
+  text-align:center;
+}
+
+.card img {
+  width:100%;
+  aspect-ratio:1/1;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+.hidden { display:none; }
+
+.detail {
+  padding:15px;
+}
+
+button, input, select {
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border:none;
+  border-radius:10px;
+}
+
+button { background:#333; color:white; }
+</style>
+</head>
+
+<body>
+
+<div class="header">推しアプリ</div>
+
+<!-- 一覧 -->
+<div id="list" class="grid"></div>
+
+<!-- 詳細 -->
+<div id="detail" class="detail hidden">
+  <button onclick="back()">←戻る</button>
+  <h2 id="dName"></h2>
+  <p id="dInfo"></p>
+  <img id="dImg">
+  <button onclick="editName()">名前変更</button>
+  <button onclick="del()">削除</button>
+</div>
+
+<!-- 追加 -->
+<div class="detail">
+  <input id="name" placeholder="名前">
+  <input id="folder" placeholder="フォルダ">
+
+  <select id="month"><option value="">月</option></select>
+  <select id="day"><option value="">日</option></select>
+
+  <input id="start" type="date">
+  <input id="img" type="file">
+
+  <button onclick="add()">追加</button>
+  <button onclick="backup()">バックアップ</button>
+  <input type="file" onchange="restore(this.files[0])">
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("oshi")||"[]");
+let current = null;
+
+/* 月日生成 */
+for(let i=1;i<=12;i++) month.innerHTML+=`<option>${i}</option>`;
+for(let i=1;i<=31;i++) day.innerHTML+=`<option>${i}</option>`;
+
+/* 保存 */
+function save(){
+  localStorage.setItem("oshi",JSON.stringify(data));
+}
+
+/* 日数 */
+function days(d){
+  if(!d) return "未設定";
+  return Math.floor((Date.now()-new Date(d))/86400000);
+}
+
+/* 描画 */
+function render(){
+  list.innerHTML="";
+  data.forEach((o,i)=>{
+    const div=document.createElement("div");
+    div.className="card";
+    div.onclick=()=>open(i);
+
+    div.innerHTML=`
+      <img src="${o.img||""}">
+      <div>${o.name||"名前なし"}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* 追加 */
+function add(){
+  const birthday=(month.value&&day.value)?`${month.value}/${day.value}`:"";
+
+  const file=img.files[0];
+  if(file){
+    const r=new FileReader();
+    r.onload=e=>{
+      data.push({
+        name:name.value,
+        folder:folder.value,
+        start:start.value,
+        birthday,
+        img:e.target.result
+      });
+      save(); render();
+    };
+    r.readAsDataURL(file);
+  }else{
+    data.push({
+      name:name.value,
+      folder:folder.value,
+      start:start.value,
+      birthday
+    });
+    save(); render();
+  }
+}
+
+/* 詳細 */
+function open(i){
+  current=i;
+  const o=data[i];
+
+  list.classList.add("hidden");
+  detail.classList.remove("hidden");
+
+  dName.textContent=o.name;
+  dInfo.textContent=`${days(o.start)}日 / 誕生日:${o.birthday||"未設定"}`;
+  dImg.src=o.img||"";
+}
+
+/* 戻る */
+function back(){
+  list.classList.remove("hidden");
+  detail.classList.add("hidden");
+}
+
+/* 削除 */
+function del(){
+  data.splice(current,1);
+  save(); back(); render();
+}
+
+/* 名前変更 */
+function editName(){
+  const n=prompt("新しい名前");
+  if(n){
+    data[current].name=n;
+    save(); render(); open(current);
+  }
+}
+
+/* バックアップ */
+function backup(){
+  const blob=new Blob([JSON.stringify(data)]);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="oshi.json";
+  a.click();
+}
+
+/* 復元 */
+function restore(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    data=JSON.parse(e.target.result);
+    save(); render();
+  };
+  r.readAsText(file);
+}
+
+/* 自動更新 */
+setInterval(render,86400000);
+
+render();
+
+/* PWA */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+
+</body>
+</html>
